@@ -13,7 +13,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy Project
 COPY app/ ./app
 
-# Endpoint
+# Port
 EXPOSE 8000
 
 # Run Server

@@ -10,6 +10,7 @@ Support authenticated user to manage multiple devices over AWS. Use RESTful API 
 - docker
 
 # Project Structure
+```
 app/
 ├── core/
 |   ├── auth
@@ -34,3 +35,5 @@ app/
 ├── README.md
 ├── Dockerfile
 └── docker-compose
+```
+
