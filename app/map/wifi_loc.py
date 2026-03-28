@@ -30,7 +30,8 @@ def wifi_location(macs:str, MAP_KEY):
     }
 
     # Define url
-    url = f"{os.getenv("MAP_URL")}{MAP_KEY}"
+    MAP_URL = os.getenv("MAP_URL")
+    url = f"{MAP_URL}{MAP_KEY}"
 
     # Call google geolocation
     response = requests.post(url, json=payload)
