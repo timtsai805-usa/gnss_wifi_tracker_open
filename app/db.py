@@ -14,7 +14,7 @@ DB1 = os.getenv("DATABASE_URL")
 DB2 = os.getenv("D2")
 
 # Get DATABASE_URL
-DATABASE_URL = DB2
+DATABASE_URL = DB1
 
 # Create DB instance
 if DATABASE_URL != DB1:
