@@ -16,6 +16,8 @@ from app.schemas.location import (
     ListLocationTracksResponse,
 )
 
+from app.services.map import process_location_address
+
 # Create router
 location_router = APIRouter(
     prefix="/location",
@@ -41,6 +43,12 @@ async def create_device_location(
     if not user_device:
         raise HTTPException(status_code=400, detail="Invalid device")
     
+    lat_lng = f"{create_dl.latitude},{create_dl.longitude}"
+    try:
+        format_address = process_location_address(lat_lng)
+    except:
+        raise HTTPException(status_code=400, detail="Insufficient address request")
+
     device_location = DeviceLocation(
         user_id=user.id,
         device_id=user_device.id,
@@ -53,6 +61,7 @@ async def create_device_location(
         speed=create_dl.speed,
         motion=create_dl.motion,
         local_time=create_dl.local_time,
+        address=format_address,
         created_at=datetime.now(timezone.utc)
     )
 
@@ -60,21 +69,7 @@ async def create_device_location(
     db.commit()
     db.refresh(device_location)
 
-    return DeviceLocationResponse(
-        id=device_location.id,
-        user_id=device_location.user_id,
-        device_id=device_location.device_id,
-        macs=device_location.macs,
-        method=device_location.method,
-        latitude=device_location.latitude,
-        longitude=device_location.longitude,
-        altitude=device_location.altitude,
-        accuracy=device_location.accuracy,
-        speed=device_location.speed,
-        motion=device_location.motion,
-        local_time=device_location.local_time,
-        created_at=device_location.created_at
-    )
+    return device_location
 
 # GET device location tracks by date
 @location_router.get("/{device_id}/tracks", response_model=ListLocationTracksResponse)
@@ -120,6 +115,7 @@ async def list_location_tracks(
         DeviceLocationResponse(
             id=dl.id,
             user_id=dl.user_id,
+            macs=dl.macs,
             method=dl.method,
             latitude=dl.latitude,
             longitude=dl.longitude, 

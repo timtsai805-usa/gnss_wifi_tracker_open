@@ -18,7 +18,6 @@ app = FastAPI(
 
 # Load keys from env
 load_dotenv()
-DATABASE_URL = os.getenv("DATABASE_URL")
 SECRET_KEY = os.getenv("SECRET_KEY")
 MAP_KEY = os.getenv("MAP_KEY")
 MAP_URL = os.getenv("MAP_URL")

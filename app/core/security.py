@@ -9,6 +9,8 @@ import os
 
 from pwdlib import PasswordHash
 
+load_dotenv()
+
 # Get SECRET_KEY
 SECRET_KEY = os.getenv("SECRET_KEY")
 

@@ -16,7 +16,7 @@ from app.schemas.location import (
     ListLocationTracksResponse,
 )
 
-from app.map import wifi_loc
+from app.services.map import process_wifi_location, process_location_address
 import os
 
 
@@ -27,8 +27,8 @@ locationServices_router = APIRouter(
 )
 
 # POST wifi location
-@locationServices_router.post("/{device_id}/wifi_location")
-async def request_wifi_location(
+@locationServices_router.post("/{device_id}/wifi_location", response_model=DeviceLocationResponse)
+async def get_device_wifi_location(
     device_id: int,
     create_dl: DeviceLocationCreate,
     db: SessionDep,
@@ -43,19 +43,25 @@ async def request_wifi_location(
     # Check user device if exist
     user_device = db.query(UserDevice).filter(UserDevice.id == device_id).first()
     if not user_device:
-        raise HTTPException(status_code=400, detail="Invalid device")
+        raise HTTPException(status_code=400, detail="Insufficient user device")
     
     if create_dl.macs is not None and (
-        create_dl.latitude > 0 and create_dl.longitude > 0):
+        create_dl.latitude >= 0 and create_dl.longitude >= 0):
         
         macs = str(create_dl.macs)
-        MAP_KEY = os.getenv("MAP_KEY")
+        latitude, longitude, accuracy = process_wifi_location(macs)
 
-        latitude, longitude, accuracy = wifi_loc(macs, MAP_KEY)
+    else:
+        raise HTTPException(status_code=400, detail="Invalid wifi data")
     
-    payload = DeviceLocation(
+    lat_lng = f"{latitude},{longitude}"
+    try:
+        format_address = process_location_address(lat_lng)
+    except:
+        raise HTTPException(status_code=400, detail="Insufficient address request")
+    
+    data = DeviceLocation(
         user_id=user.id,
-        device_id=user_device.id,
         macs=create_dl.macs,
         method="wifi",
         latitude=latitude,
@@ -65,25 +71,12 @@ async def request_wifi_location(
         speed=create_dl.speed,
         motion=create_dl.motion,
         local_time=create_dl.local_time,
+        address=format_address,
         created_at=datetime.now(timezone.utc)
     )
 
-    db.add(payload)
+    db.add(data)
     db.commit()
-    db.refresh(payload)
+    db.refresh(data)
 
-    return DeviceLocationResponse(
-        id=payload.id,
-        user_id=payload.user_id,
-        device_id=payload.device_id,
-        macs=payload.macs,
-        method=payload.method,
-        latitude=payload.latitude,
-        longitude=payload.longitude,
-        altitude=payload.altitude,
-        accuracy=payload.accuracy,
-        speed=payload.speed,
-        motion=payload.motion,
-        local_time=payload.local_time,
-        created_at=payload.created_at
-    )
+    return data

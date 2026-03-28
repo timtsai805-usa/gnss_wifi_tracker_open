@@ -17,6 +17,7 @@ class DeviceLocation(Base):
     speed = Column(Float, default=0.0)
     motion = Column(Boolean, default=False)
     local_time = Column(DateTime, default=None)
+    address = Column(String, default=None)
     created_at = Column(DateTime)
 
     users = relationship("User", back_populates="devices_location")

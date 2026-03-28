@@ -19,12 +19,14 @@ class DeviceLocationBase(BaseModel):
     motion: Optional[bool] = None
     local_time: Optional[datetime] = None
 
+
 class DeviceLocationCreate(DeviceLocationBase):
     pass
 
 class DeviceLocationResponse(DeviceLocationBase):
     id: int
     user_id: int
+    address: Optional[str] = None
     created_at: datetime
 
     class Config:
