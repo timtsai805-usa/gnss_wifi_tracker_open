@@ -62,6 +62,7 @@ async def get_device_wifi_location(
     
     data = DeviceLocation(
         user_id=user.id,
+        device_id=user_device.id,
         macs=create_dl.macs,
         method="wifi",
         latitude=latitude,

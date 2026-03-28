@@ -123,7 +123,8 @@ async def list_location_tracks(
             accuracy=dl.accuracy,
             speed=dl.speed,
             motion=dl.motion, 
-            local_time=dl.local_time, 
+            local_time=dl.local_time,
+            address=dl.address, 
             created_at=dl.created_at,
         )
         for dl in device_location
