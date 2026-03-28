@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 import os
 
-# Database url
+# Get DATABASE_URL
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 # Create DB instance
