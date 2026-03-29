@@ -3,3 +3,5 @@ Commands.md
 
 __pycache__/
 *.pyc
+
+/keys
