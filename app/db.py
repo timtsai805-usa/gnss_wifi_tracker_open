@@ -9,21 +9,26 @@ from dotenv import load_dotenv
 import os
 
 load_dotenv()
+AWS_RDS = os.getenv("AWS_RDS_URL")
+POSTGRES = os.getenv("POSTGRES_URL")
+SQLITE = os.getenv("SQLITE_URL")
 
-DB1 = os.getenv("DATABASE_URL")
-DB2 = os.getenv("D2")
 
 # Get DATABASE_URL
-DATABASE_URL = DB1
+DATABASE_URL = AWS_RDS
 
 # Create DB instance
-if DATABASE_URL != DB1:
+if DATABASE_URL == SQLITE:
     engine = create_engine(
-        DB2,
+        SQLITE,
         connect_args={"check_same_thread": False}
     )
-else:
-    engine = create_engine(DB1)
+elif DATABASE_URL == POSTGRES:
+    engine = create_engine(POSTGRES)
+
+elif DATABASE_URL == AWS_RDS:
+    engine = create_engine(AWS_RDS)
+
 
 # Create DB session
 SessionLocal = sessionmaker(
