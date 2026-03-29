@@ -1,0 +1,16 @@
+version: "3.9"
+
+services:
+  api:
+    build: .
+    container_name: my_api
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - ./keys/global-bundle.pem:/certs/global-bundle.pem:ro
+      - ./app:/gwt/app
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=${POSTGRES_SSLMODE}&sslrootcert=${POSTGRES_SSLROOTCERT}
+    ports:
+      - "8000:8000"
