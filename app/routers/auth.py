@@ -32,7 +32,7 @@ auth_router = APIRouter(
 @auth_router.post("/signup", response_model=UserResponse)
 async def register_user(reg_user: UserRegister, db: SessionDep):
     
-    # Check if user already registered
+    # Check user email if already exist
     email_ext = db.query(User).filter(User.email == reg_user.email).first()
     if email_ext:
         raise HTTPException(status_code=400, detail="User email already exist")
@@ -40,7 +40,6 @@ async def register_user(reg_user: UserRegister, db: SessionDep):
     # Hash user password
     pwd_hash = hash_password(reg_user.password)
 
-    # Create new user
     new_user = User(
         name=reg_user.name,
         email=reg_user.email,
@@ -49,21 +48,21 @@ async def register_user(reg_user: UserRegister, db: SessionDep):
         created_at=datetime.now(timezone.utc)
     )
     
-    # Update user database
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
 
-    # Return user data
     return new_user
 
 # Login
 @auth_router.post("/login", response_model=UserTokenResponse)
 async def login_user(login_user: UserLogin, db: SessionDep):
 
-    # Check Cache if token exist by user email
+    # Check token if already cached
     cached_token = await get_cache_user_token(login_user.email)
     if cached_token:
+
+        # Check token expire time
         expire = datetime.fromisoformat(cached_token["expires_at"])
         if expire > datetime.now(timezone.utc):
             return UserTokenResponse(
@@ -83,10 +82,9 @@ async def login_user(login_user: UserLogin, db: SessionDep):
     # Create user token
     token, expire = create_token(db_user.id)
 
-    # Save to redis, TTL: 60 minutes
+    # Save token to cache by user email, token, expire
     await save_cache_user_token(login_user.email, token, expire)
 
-    # Create user data
     new_login = UserToken(
         user_id=db_user.id,
         token=token,
@@ -94,12 +92,10 @@ async def login_user(login_user: UserLogin, db: SessionDep):
         revoked=False
     )
 
-    # Update user token database
     db.add(new_login)
     db.commit()
     db.refresh(new_login)
     
-    # Return user token data
     return new_login
 
 
@@ -110,25 +106,22 @@ async def token_refresh(
     db_token: UserToken = Depends(token_validity)
 ):
 
-    # Check if token matches
+    # Check token if matches
     db_token = db.query(UserToken).filter(UserToken.token == db_token.token).first()
     if not db_token:
         raise HTTPException(status_code=400, detail="Insufficient Token")
     
-    # Renew token
+    # Renew user token
     token, expire = refresh_token(db_token.token)
 
+    # Update user token status
     db_token.token = token
     db_token.expires_at = expire
     db_token.revoked = False
 
-    # Update new token only
     db.commit()
 
-    return UserTokenResponse(
-        token=db_token.token,
-        expires_at=db_token.expires_at
-    )
+    return db_token
 
 
 # Logout
@@ -138,9 +131,8 @@ async def logout_user(
     db_token: UserToken = Depends(token_validity)
 ):
 
-    # Update revoked if received token
+    # Update token status to expire then sign off user
     db_token.revoked = True
     db.commit()
 
-    # Return msg
     return {"msg": "Logout Success"}

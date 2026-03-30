@@ -40,7 +40,7 @@ class UserDeviceUpdate(BaseModel):
         max_length=255,
         description="Enter device name",
     )
-    iccid: str = Field(
+    iccid: Optional[str] = Field(
         default=None,
         min_length=1,
         max_length=128,
