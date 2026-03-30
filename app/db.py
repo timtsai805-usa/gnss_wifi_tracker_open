@@ -9,20 +9,20 @@ from dotenv import load_dotenv
 import os
 
 load_dotenv()
-AWS_RDS_URL = os.getenv("AWS_RDS_URL")
+POSTGRES_URL = os.getenv("POSTGRES_URL")
 SQLITE_URL = os.getenv("SQLITE_URL")
 
-# Get DATABASE_URL
-DATABASE_URL = AWS_RDS_URL
+# Get database url
+DATABASE_URL = SQLITE_URL
 
 # Create DB instance
-if DATABASE_URL.startswith("SQLITE"):
+if DATABASE_URL.startswith("sqlite"):
     engine = create_engine(
         SQLITE_URL,
         connect_args={"check_same_thread": False}
     )
 else:
-    engine = create_engine(AWS_RDS_URL)
+    engine = create_engine(POSTGRES_URL)
 
 
 # Create DB session

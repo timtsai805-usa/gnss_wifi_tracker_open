@@ -1,10 +1,9 @@
 from .user import (
-    UserCreate,
     UserResponse,
     UserUpdate,
-    UserDeviceCreate,
-    UserDeviceResponse,
-    UserDeviceUpdate
+    UserRegister,
+    UserTokenResponse,
+    UserLogin,
 )
 
 from .device import (
@@ -21,9 +20,11 @@ from .location import (
 )
 
 __init__ = [
-    UserCreate,
     UserResponse,
     UserUpdate,
+    UserRegister,
+    UserTokenResponse,
+    UserLogin,
     
     UserDeviceCreate,
     UserDeviceResponse,

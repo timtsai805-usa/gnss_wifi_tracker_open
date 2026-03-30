@@ -9,7 +9,6 @@ from app.core.auth import token_validity
 from app.models.user import User, UserToken
 
 from app.schemas.user import (
-    UserCreate,
     UserResponse,
     UserUpdate
 )
@@ -26,17 +25,13 @@ async def get_user_by_id(
     db: SessionDep,
     db_token: UserToken = Depends(token_validity)
 ):
+    
+    # Check token if matches by user id
     user = db.query(User).filter(User.id == db_token.user_id).first()
     if not user:
         raise HTTPException(status_code=401, detail="Invalid User")
     
-    return UserResponse(
-        id=user.id,
-        name=user.name,
-        email=user.email,
-        is_active=user.is_active,
-        created_at=user.created_at
-    )
+    return user
 
 
 # PUT user by id
@@ -46,31 +41,27 @@ async def update_user_by_id(
     db: SessionDep,
     db_token: UserToken = Depends(token_validity)
 ):
-    
+
+    # Check token if matches by user id
     user = db.query(User).filter(User.id == db_token.user_id).first()
     if not user:
         raise HTTPException(status_code=401, detail="Invalid User")
-    
+
+    # Update when selected user field is changed
     if up_user.name is not None:
         user.name = up_user.name
     if up_user.email is not None:
+        # Check changed email if already exist
         email_exist = db.query(User).filter(User.email == up_user.email, User.id != user.id).first()
-
         if email_exist:
             raise HTTPException(status_code=400, detail="Email already in use")
-    
         user.email = up_user.email
 
     db.commit()
     db.refresh(user)
     
-    return UserResponse(
-        id=user.id,
-        name=user.name,
-        email=user.email,
-        is_active=user.is_active,
-        created_at=user.created_at
-    )
+    return user
+
 
 # DELETE user
 @user_router.delete("/me")

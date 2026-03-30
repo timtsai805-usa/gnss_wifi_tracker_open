@@ -4,10 +4,18 @@ from enum import Enum
 from datetime import datetime
 
 class UserDeviceBase(BaseModel):
-    imei: str
+    imei: str = Field(
+        min_length=1,
+        max_length=128,
+        description="Device unique imei number"
+    )
 
 class UserDeviceCreate(UserDeviceBase):
-    device_name: str
+    device_name: str = Field(
+        min_length=1,
+        max_length=255,
+        description="Enter device name",
+    )
     
 class UserDeviceResponse(BaseModel):
     id: int
@@ -26,5 +34,15 @@ class ListUserDeviceResponse(BaseModel):
     count: int
 
 class UserDeviceUpdate(BaseModel):
-    device_name: Optional[str] = None
-    iccid: Optional[str] = None
+    device_name: Optional[str] = Field(
+        default=None,
+        min_length=1,
+        max_length=255,
+        description="Enter device name",
+    )
+    iccid: str = Field(
+        default=None,
+        min_length=1,
+        max_length=128,
+        description="Device sim card number"
+    )

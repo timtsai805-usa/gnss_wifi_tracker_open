@@ -13,9 +13,14 @@ from app.schemas.user import (
     UserRegister,
     UserLogin,
     UserTokenResponse,
-    RefreshToken,
     UserResponse
 )
+
+from app.redis.redis_client import (
+    save_cache_user_token, 
+    get_cache_user_token
+)
+
 
 # Create router
 auth_router = APIRouter(
@@ -37,7 +42,7 @@ async def register_user(reg_user: UserRegister, db: SessionDep):
 
     # Create new user
     new_user = User(
-        name=None,
+        name=reg_user.name,
         email=reg_user.email,
         password_hash=pwd_hash,
         is_active=True,
@@ -50,29 +55,36 @@ async def register_user(reg_user: UserRegister, db: SessionDep):
     db.refresh(new_user)
 
     # Return user data
-    return UserResponse(
-        id=new_user.id,
-        name=new_user.name,
-        email=new_user.email,
-        is_active=new_user.is_active,
-        created_at=new_user.created_at
-    )
+    return new_user
 
 # Login
 @auth_router.post("/login", response_model=UserTokenResponse)
 async def login_user(login_user: UserLogin, db: SessionDep):
 
-    # Check if user matches
+    # Check Cache if token exist by user email
+    cached_token = await get_cache_user_token(login_user.email)
+    if cached_token:
+        expire = datetime.fromisoformat(cached_token["expires_at"])
+        if expire > datetime.now(timezone.utc):
+            return UserTokenResponse(
+                token=cached_token["token"],
+                expires_at=expire
+                )
+        
+    # Check if user email matches
     db_user = db.query(User).filter(User.email == login_user.email).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
-    
+
     # Verify user password
     if not verify_password(login_user.password, db_user.password_hash):
         raise HTTPException(status_code=400, detail="Incorrect password")
     
     # Create user token
     token, expire = create_token(db_user.id)
+
+    # Save to redis, TTL: 60 minutes
+    await save_cache_user_token(login_user.email, token, expire)
 
     # Create user data
     new_login = UserToken(
@@ -88,10 +100,8 @@ async def login_user(login_user: UserLogin, db: SessionDep):
     db.refresh(new_login)
     
     # Return user token data
-    return UserTokenResponse(
-        token=new_login.token,
-        expires_at=new_login.expires_at
-    )
+    return new_login
+
 
 # Refresh Token
 @auth_router.post("/refresh_token", response_model=UserTokenResponse)
@@ -108,7 +118,6 @@ async def token_refresh(
     # Renew token
     token, expire = refresh_token(db_token.token)
 
-
     db_token.token = token
     db_token.expires_at = expire
     db_token.revoked = False
@@ -120,6 +129,7 @@ async def token_refresh(
         token=db_token.token,
         expires_at=db_token.expires_at
     )
+
 
 # Logout
 @auth_router.post("/logout")
@@ -133,4 +143,4 @@ async def logout_user(
     db.commit()
 
     # Return msg
-    return {"msg": "Logout success"}
+    return {"msg": "Logout Success"}

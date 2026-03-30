@@ -5,11 +5,32 @@ from datetime import datetime
 
 # Auth
 class UserRegister(BaseModel):
-    email: EmailStr
-    password: str
+    email: EmailStr = Field(
+        max_length=255,
+        description="Enter your email address"
+    )
+    password: str = Field(
+        min_length=8,
+        max_length=255,
+        description="Enter min. 8-digits password",
+    )
+    name: Optional[str] = Field(
+        default=None,
+        min_length=1,
+        max_length=128,
+        description="Enter user name",
+    )
     
-class UserLogin(UserRegister):
-    pass
+class UserLogin(BaseModel):
+    email: EmailStr = Field(
+        max_length=255,
+        description="Enter your email address"
+    )
+    password: str = Field(
+        min_length=8,
+        max_length=255,
+        description="Enter min. 8-digits password",
+    )
 
 class UserTokenResponse(BaseModel):
     token: str
@@ -18,16 +39,17 @@ class UserTokenResponse(BaseModel):
     class Config:
         from_attributes: True
 
-class RefreshToken(BaseModel):
-    token: str
-
 # User
 class UserBase(BaseModel):
-    name: str
-    email: EmailStr
-
-class UserCreate(UserBase):
-    password: str
+    name: str = Field(
+        min_length=1,
+        max_length=128,
+        description="Enter user name",
+    )
+    email: EmailStr = Field(
+        max_length=255,
+        description="Enter your email address"
+    )
     
 class UserResponse(BaseModel):
     id: int
@@ -40,32 +62,14 @@ class UserResponse(BaseModel):
         from_attributes: True
 
 class UserUpdate(BaseModel):
-    name: Optional[str] = None
-    email: Optional[str] = None
-
-# User Device
-class UserDeviceBase(BaseModel):
-    user_id: int
-    device_id: int
-
-class UserDeviceCreate(UserDeviceBase):
-    user_name: str
-    device_nme: str
-
-class UserDeviceResponse(BaseModel):
-    id: int
-    user_id: int
-    device_id: int
-    user_name: str
-    device_name: str
-    is_share: bool
-    created_at: datetime
-
-    class Config:
-        from_attributes: True
-
-class UserDeviceUpdate(BaseModel):
-    user_name: Optional[str]
-    device_name: Optional[str]
-    is_share: Optional[bool]
-
+    name: Optional[str] = Field(
+        default=None,
+        min_length=1,
+        max_length=128,
+        description="Enter user name",
+    )
+    email: Optional[EmailStr] = Field(
+        default=None,
+        max_length=255,
+        description="Enter your email address"
+    )

@@ -1,6 +1,17 @@
 version: "3.9"
 
 services:
+  db:
+    image: postgres:15
+    container_name: my_db
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
   api:
     build: .
     container_name: my_api
@@ -8,9 +19,19 @@ services:
     env_file:
       - .env
     volumes:
-      - ./keys/global-bundle.pem:/certs/global-bundle.pem:ro
       - ./app:/gwt/app
-    environment:
-      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=${POSTGRES_SSLMODE}&sslrootcert=${POSTGRES_SSLROOTCERT}
     ports:
       - "8000:8000"
+    depends_on:
+      - db
+      - redis
+
+  redis:
+    image: redis:7
+    container_name: my_redis
+    restart: always
+    ports:
+      - "6379:6379"
+
+volumes:
+  postgres_data:

@@ -30,12 +30,12 @@ async def create_device(
     db_token: UserToken = Depends(token_validity)
 ):
 
-    # Check token if matches
+    # Check token if matches by user id
     user = db.query(User).filter(User.id == db_token.user_id).first()
     if not user:
         raise HTTPException(status_code=401, detail="Invalid User")
     
-    # Check imei if exist
+    # Check device imei if already exist
     imei_exist = db.query(UserDevice).filter(UserDevice.imei == create_d.imei).first()
     if imei_exist:
         raise HTTPException(status_code=400, detail="Imei already exist")
@@ -53,15 +53,7 @@ async def create_device(
     db.commit()
     db.refresh(new_device)
 
-    return UserDeviceResponse(
-        id=new_device.id,
-        user_id=new_device.user_id,
-        device_name=new_device.device_name,
-        imei=new_device.imei,
-        iccid=new_device.iccid,
-        is_active=new_device.is_active,
-        created_at=new_device.created_at
-    )
+    return new_device
 
 # GET device by id
 @device_router.get("/", response_model=ListUserDeviceResponse)
@@ -70,10 +62,12 @@ async def list_device(
     db_token: UserToken = Depends(token_validity)
 ):
     
+    # Check user token if matches by user id
     user = db.query(User).filter(User.id == db_token.user_id).first()
     if not user:
         raise HTTPException(status_code=401, detail="Invalid User")
     
+    # Get all device by user id
     user_devices = db.query(UserDevice).filter(UserDevice.user_id == user.id).all()
     
     data = [
@@ -103,14 +97,17 @@ async def update_device(
     db_token: UserToken = Depends(token_validity)
 ):
 
+    # Check token if matches by user id
     user = db.query(User).filter(User.id == db_token.user_id).first()
     if not user:
         raise HTTPException(status_code=401, detail="Invalid User")
-    
+
+    # Check user device if matches by device id
     user_device = db.query(UserDevice).filter(UserDevice.id == device_id).first()
     if not user_device:
         raise HTTPException(status_code=404, detail="Device not found")
 
+    # Update when selected user device field is changed
     if update_d.iccid is not None:
         user_device.iccid = update_d.iccid
     if update_d.device_name is not None:
@@ -119,15 +116,8 @@ async def update_device(
     db.commit()
     db.refresh(user_device)
 
-    return UserDeviceResponse(
-        id=user_device.id,
-        user_id=user_device.user_id,
-        device_name=user_device.device_name,
-        imei=user_device.imei,
-        iccid=user_device.iccid,
-        is_active=user_device.is_active,
-        created_at=user_device.created_at
-    )
+    return user_device
+
 
 # DELETE device
 @device_router.delete("/{device_id}")
@@ -137,10 +127,12 @@ async def delete_device(
     db_token: UserToken = Depends(token_validity)
 ):
 
+    # Check token if matches by user id
     user = db.query(User).filter(User.id == db_token.user_id).first()
     if not user:
         raise HTTPException(status_code=401, detail="Invalid User")
-    
+
+    # Check user device if matches by device id
     user_device = db.query(UserDevice).filter(UserDevice.id == device_id).first()
     if not user_device:
         raise HTTPException(status_code=404, detail="Device not found")

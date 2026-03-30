@@ -16,8 +16,6 @@ from app.schemas.location import (
     ListLocationTracksResponse,
 )
 
-from app.services.map import process_location_address
-
 # Create router
 location_router = APIRouter(
     prefix="/location",
@@ -33,21 +31,15 @@ async def create_device_location(
     db_token: UserToken = Depends(token_validity)
 ):
 
-    # Check token if matches
+    # Check token if matches by user id
     user = db.query(User).filter(User.id == db_token.user_id).first()
     if not user:
         raise HTTPException(status_code=401, detail="Invalid User")
     
-    # Check user device if exist
+    # Check user device if matches by device id
     user_device = db.query(UserDevice).filter(UserDevice.id == device_id).first()
     if not user_device:
         raise HTTPException(status_code=400, detail="Invalid device")
-    
-    lat_lng = f"{create_dl.latitude},{create_dl.longitude}"
-    try:
-        format_address = process_location_address(lat_lng)
-    except:
-        raise HTTPException(status_code=400, detail="Insufficient address request")
 
     device_location = DeviceLocation(
         user_id=user.id,
@@ -61,7 +53,6 @@ async def create_device_location(
         speed=create_dl.speed,
         motion=create_dl.motion,
         local_time=create_dl.local_time,
-        address=format_address,
         created_at=datetime.now(timezone.utc)
     )
 
@@ -70,6 +61,7 @@ async def create_device_location(
     db.refresh(device_location)
 
     return device_location
+
 
 # GET device location tracks by date
 @location_router.get("/{device_id}/tracks", response_model=ListLocationTracksResponse)
@@ -81,27 +73,26 @@ async def list_location_tracks(
     db_token: UserToken = Depends(token_validity)
 ):
     
-    # date time config
+    # Set start_date_time to 00:00:00, end-date_time to 23:59:59
     start_date = datetime.combine(start_date.date(), time.min).replace(tzinfo=timezone.utc)
     end_date = datetime.combine(end_date.date(), time.max).replace(tzinfo=timezone.utc)
 
-    # Check token if matches
+    # Check token if matches by user id
     user = db.query(User).filter(User.id == db_token.user_id).first()
     if not user:
         raise HTTPException(status_code=401, detail="Invalid User")
     
-    # Check user device if exist
+    # Check device location if matches by user id, device id
     user_device = (
         db.query(UserDevice)
         .filter(UserDevice.id == device_id)
         .filter(UserDevice.user_id == user.id)
         .first()
     )
-
     if not user_device:
         raise HTTPException(status_code=400, detail="Invalid device")
 
-    # Check device location
+    # Query device location only if datetime matches by device id, start_date, end_date
     device_location = (
         db.query(DeviceLocation)
         .filter(DeviceLocation.device_id == device_id)
@@ -115,6 +106,7 @@ async def list_location_tracks(
         DeviceLocationResponse(
             id=dl.id,
             user_id=dl.user_id,
+            device_id=dl.device_id,
             macs=dl.macs,
             method=dl.method,
             latitude=dl.latitude,
@@ -124,7 +116,6 @@ async def list_location_tracks(
             speed=dl.speed,
             motion=dl.motion, 
             local_time=dl.local_time,
-            address=dl.address, 
             created_at=dl.created_at,
         )
         for dl in device_location
